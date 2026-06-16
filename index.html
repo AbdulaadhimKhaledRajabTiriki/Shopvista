@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Commerce Hub</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <nav class="bg-blue-600 text-white p-4 sticky top-0 shadow-md z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold cursor-pointer" onclick="switchView('products')">
+                <i class="fa-solid fa-shop mr-2"></i>TechMart
+            </h1>
+            <div class="space-x-4 flex items-center">
+                <button onclick="switchView('products')" class="hover:text-blue-200 transition"><i class="fa-solid fa-boxes-stacked mr-1"></i> Products</button>
+                <button onclick="switchView('orders')" class="hover:text-blue-200 transition"><i class="fa-solid fa-receipt mr-1"></i> My Orders</button>
+                <button onclick="switchView('admin')" class="bg-blue-800 px-3 py-1.5 rounded hover:bg-blue-900 transition"><i class="fa-solid fa-user-shield mr-1"></i> Admin Panel</button>
+                <button onclick="switchView('cart')" class="relative bg-orange-500 px-4 py-1.5 rounded-full hover:bg-orange-600 transition font-semibold">
+                    <i class="fa-solid fa-cart-shopping mr-1"></i> Cart
+                    <span id="cart-count" class="absolute -top-2 -right-2 bg-red-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-6 max-w-6xl min-h-screen">
+
+        <section id="view-products" class="view-section">
+            <h2 class="text-3xl font-bold mb-6 text-gray-900 border-b pb-2">Our Products</h2>
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                </div>
+        </section>
+
+        <section id="view-cart" class="view-section hidden">
+            <h2 class="text-3xl font-bold mb-6 text-gray-900 border-b pb-2">Your Shopping Cart</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow space-y-4" id="cart-items-container">
+                    </div>
+                <div class="bg-white p-6 rounded-lg shadow h-fit">
+                    <h3 class="text-xl font-bold mb-4 border-b pb-2">Order Summary</h3>
+                    <div class="flex justify-between mb-2 text-lg">
+                        <span>Total Items:</span>
+                        <span id="summary-count" class="font-semibold">0</span>
+                    </div>
+                    <div class="flex justify-between mb-6 text-xl font-bold text-blue-600">
+                        <span>Total Price:</span>
+                        <span>$<span id="summary-total">0.00</span></span>
+                    </div>
+                    <button onclick="checkout()" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold text-lg shadow transition">
+                        <i class="fa-solid fa-credit-card mr-2"></i>Place Order
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-orders" class="view-section hidden">
+            <h2 class="text-3xl font-bold mb-6 text-gray-900 border-b pb-2">Your Order History</h2>
+            <div id="customer-orders-container" class="space-y-4">
+                </div>
+        </section>
+
+        <section id="view-admin" class="view-section hidden">
+            <div class="flex justify-between items-center mb-6 border-b pb-2">
+                <h2 class="text-3xl font-bold text-red-700"><i class="fa-solid fa-lock mr-2"></i>Admin Order Dashboard</h2>
+                <span class="bg-red-100 text-red-800 text-xs font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Management Mode</span>
+            </div>
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-100 uppercase text-sm font-semibold text-gray-700 border-b">
+                        <tr>
+                            <th class="p-4">Order ID</th>
+                            <th class="p-4">Items Placed</th>
+                            <th class="p-4">Total Revenue</th>
+                            <th class="p-4">Current Status</th>
+                            <th class="p-4 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-orders-table" class="divide-y divide-gray-200">
+                        </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Mock data representing a database framework
+        const PRODUCTS = [
+            { id: 1, name: "Mechanical Gaming Keyboard", price: 89.99, desc: "RGB backlit tactile switches for pro-level responsiveness.", icon: "fa-keyboard" },
+            { id: 2, name: "Wireless Ergonomic Mouse", price: 49.99, desc: "High precision optical sensor with multi-device pairing.", icon: "fa-mouse" },
+            { id: 3, name: "UltraWide 4K Monitor", price: 349.99, desc: "34-inch curved workspace screen with stunning color accuracy.", icon: "fa-desktop" },
+            { id: 4, name: "Noise Cancelling Headphones", price: 129.99, desc: "Immersive audio isolation with comfortable memory foam padding.", icon: "fa-headphones" }
+        ];
+
+        let cart = [];
+        let orders = [
+            { id: "ORD-9872", items: "1x Wireless Ergonomic Mouse", total: 49.99, status: "Delivered" },
+            { id: "ORD-1104", items: "1x UltraWide 4K Monitor", total: 349.99, status: "Processing" }
+        ];
+
+        // View Router Switching Logic
+        function switchView(viewId) {
+            document.querySelectorAll('.view-section').forEach(section => section.classList.add('hidden'));
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+            
+            if (viewId === 'products') renderProducts();
+            if (viewId === 'cart') renderCart();
+            if (viewId === 'orders') renderCustomerOrders();
+            if (viewId === 'admin') renderAdminOrders();
+        }
+
+        // 1. Render Products to Front-end List
+        function renderProducts() {
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = PRODUCTS.map(prod => `
+                <div class="bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                    <div>
+                        <div class="text-4xl text-blue-600 mb-4 text-center py-4 bg-gray-50 rounded-lg">
+                            <i class="fa-solid ${prod.icon}"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">${prod.name}</h3>
+                        <p class="text-gray-600 text-sm mb-4">${prod.desc}</p>
+                    </div>
+                    <div class="flex justify-between items-center mt-4">
+                        <span class="text-2xl font-black text-gray-900">$${prod.price.toFixed(2)}</span>
+                        <button onclick="addToCart(${prod.id})" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition text-sm">
+                            <i class="fa-solid fa-cart-plus mr-1"></i> Add to Cart
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Cart Actions
+        function addToCart(productId) {
+            const product = PRODUCTS.find(p => p.id === productId);
+            const existing = cart.find(item => item.product.id === productId);
+            if (existing) {
+                existing.quantity++;
+            } else {
+                cart.push({ product, quantity: 1 });
+            }
+            updateCartBadge();
+        }
+
+        function updateCartBadge() {
+            const count = cart.reduce((acc, item) => acc + item.quantity, 0);
+            const badge = document.getElementById('cart-count');
+            if (count > 0) {
+                badge.textContent = count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // 2. Render Shopping Cart
+        function renderCart() {
+            const container = document.getElementById('cart-items-container');
+            if (cart.length === 0) {
+                container.innerHTML = `<p class="text-gray-500 text-center py-8">Your cart is currently empty. Head over to the products tab to add gear!</p>`;
+                updateSummary(0, 0);
+                return;
+            }
+
+            container.innerHTML = cart.map((item, index) => `
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b pb-4 last:border-0 last:pb-0">
+                    <div class="flex items-center space-x-4">
+                        <div class="text-2xl text-blue-600 p-3 bg-gray-100 rounded"><i class="fa-solid ${item.product.icon}"></i></div>
+                        <div>
+                            <h4 class="font-bold text-lg">${item.product.name}</h4>
+                            <p class="text-sm text-gray-500">$${item.product.price} each</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-6 mt-4 sm:mt-0">
+                        <div class="flex items-center border rounded">
+                            <button onclick="changeQty(${index}, -1)" class="px-2 py-1 bg-gray-100 hover:bg-gray-200">-</button>
+                            <span class="px-4 font-semibold">${item.quantity}</span>
+                            <button onclick="changeQty(${index}, 1)" class="px-2 py-1 bg-gray-100 hover:bg-gray-200">+</button>
+                        </div>
+                        <span class="font-bold text-lg w-20 text-right">$${(item.product.price * item.quantity).toFixed(2)}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            const totalCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+            const totalPrice = cart.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
+            updateSummary(totalCount, totalPrice);
+        }
+
+        function changeQty(index, delta) {
+            cart[index].quantity += delta;
+            if (cart[index].quantity <= 0) cart.splice(index, 1);
+            updateCartBadge();
+            renderCart();
+        }
+
+        function updateSummary(count, price) {
+            document.getElementById('summary-count').textContent = count;
+            document.getElementById('summary-total').textContent = price.toFixed(2);
+        }
+
+        // Checkout Action (Creates order tracking items)
+        function checkout() {
+            if (cart.length === 0) return alert("Add items to your cart before checking out!");
+            
+            const orderId = "ORD-" + Math.floor(1000 + Math.random() * 9000);
+            const itemsString = cart.map(item => `${item.quantity}x ${item.product.name}`).join(', ');
+            const totalPrice = cart.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
+            
+            orders.unshift({ id: orderId, items: itemsString, total: totalPrice, status: "Pending" });
+            cart = [];
+            updateCartBadge();
+            switchView('orders');
+            alert(`Success! Order ${orderId} has been submitted.`);
+        }
+
+        // 3. Render Customer Order Page
+        function renderCustomerOrders() {
+            const container = document.getElementById('customer-orders-container');
+            if (orders.length === 0) {
+                container.innerHTML = `<p class="text-gray-500 text-center py-8">No order history found.</p>`;
+                return;
+            }
+
+            container.innerHTML = orders.map(order => {
+                let statusClass = "bg-yellow-100 text-yellow-800";
+                if (order.status === "Delivered") statusClass = "bg-green-100 text-green-800";
+                if (order.status === "Shipped") statusClass = "bg-blue-100 text-blue-800";
+
+                return `
+                    <div class="bg-white p-5 rounded-lg shadow border flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                        <div>
+                            <div class="flex items-center space-x-3 mb-1">
+                                <span class="font-bold text-blue-600 text-lg">${order.id}</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusClass}">${order.status}</span>
+                            </div>
+                            <p class="text-gray-700 text-sm">${order.items}</p>
+                        </div>
+                        <div class="mt-4 sm:mt-0 font-bold text-xl text-gray-900">$${order.total.toFixed(2)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 4. Render Admin Order Management Dashboard
+        function renderAdminOrders() {
+            const tbody = document.getElementById('admin-orders-table');
+            if (orders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-500">No storefront orders available to manage.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = orders.map(order => `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-4 font-bold text-blue-600">${order.id}</td>
+                    <td class="p-4 text-sm text-gray-600 max-w-xs truncate">${order.items}</td>
+                    <td class="p-4 font-semibold text-gray-900">$${order.total.toFixed(2)}</td>
+                    <td class="p-4">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold ${
+                            order.status === 'Delivered' ? 'bg-green-100 text-green-800' :
+                            order.status === 'Shipped' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
+                        }">${order.status}</span>
+                    </td>
+                    <td class="p-4 text-center space-x-2">
+                        <button onclick="updateOrderStatus('${order.id}', 'Shipped')" class="bg-blue-500 hover:bg-blue-600 text-white text-xs px-2 py-1 rounded transition">Ship</button>
+                        <button onclick="updateOrderStatus('${order.id}', 'Delivered')" class="bg-green-500 hover:bg-green-600 text-white text-xs px-2 py-1 rounded transition">Deliver</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateOrderStatus(orderId, newStatus) {
+            const order = orders.find(o => o.id === orderId);
+            if (order) {
+                order.status = newStatus;
+                renderAdminOrders();
+            }
+        }
+
+        // Initialize view on load
+        renderProducts();
+    </script>
+</body>
+</html>
